@@ -1,5 +1,6 @@
 import React from 'react';
-import { SafeAreaView, SectionList, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { SectionList, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useBracketDataContext } from '../context/BracketDataContext';
