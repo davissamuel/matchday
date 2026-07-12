@@ -3,6 +3,7 @@ export const TEAM_NAME_ALIASES: Record<string, string> = {
   'IR Iran': 'Iran',
   USA: 'United States',
   "Côte d'Ivoire": 'Ivory Coast',
+  'Côte d’Ivoire': 'Ivory Coast',
   'Congo DR': 'DR Congo',
   Czechia: 'Czech Republic',
   'Cabo Verde': 'Cape Verde',

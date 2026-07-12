@@ -12,4 +12,9 @@ describe('normalizeTeamName', () => {
   it('returns the input unchanged when there is no known alias', () => {
     expect(normalizeTeamName('Argentina')).toBe('Argentina');
   });
+
+  it('maps both straight- and curly-apostrophe spellings of Ivory Coast', () => {
+    expect(normalizeTeamName("Côte d'Ivoire")).toBe('Ivory Coast');
+    expect(normalizeTeamName('Côte d’Ivoire')).toBe('Ivory Coast');
+  });
 });
