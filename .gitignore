@@ -43,3 +43,6 @@ yarn-error.*
 
 # worktrees
 .worktrees/
+
+# subagent-driven-development scratch space
+.superpowers/
