@@ -2351,3 +2351,433 @@ If manual verification surfaces a bug, write a failing test reproducing it in th
 git add -A
 git commit -m "fix: <describe the bug found during on-device verification>"
 ```
+
+---
+
+## Post-Review Additions
+
+A final whole-branch review after Task 17 found that `bracket.matches` (fetched, normalized, and carried all the way into `BracketDataContext` since Task 9/11/13) was never rendered anywhere — the app only ever showed group standings, never the knockout bracket, and Team Detail never showed a team's match history. Both gaps trace to how Tasks 15/16 were originally scoped, not to any implementation defect. The two tasks below close them using data the pipeline already provides — no new fetching, caching, or domain logic required.
+
+### Task 19: Knockout Bracket View
+
+**Files:**
+- Modify: `src/screens/BracketScreen.tsx`
+- Modify: `src/screens/__tests__/BracketScreen.test.tsx`
+
+**Interfaces:**
+- Consumes: `BracketMatch`, `GroupStanding` (from `../domain/bracket`, Task 9), `useBracketDataContext` (Task 13) — no new exports, this screen has no other consumers.
+
+**Global Constraints still apply:** TDD mandate; `await render(...)` for every `@testing-library/react-native` render call in this project's installed version; `SafeAreaView` must come from `react-native-safe-area-context`, not `react-native`.
+
+- [ ] **Step 1: Write the failing test**
+
+`src/screens/__tests__/BracketScreen.test.tsx` (full replacement — adds one test to the existing three, and uses a single `SectionList` covering both groups and knockout matches):
+
+```tsx
+jest.mock('../../context/BracketDataContext');
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({ navigate: mockNavigate }),
+}));
+
+const mockNavigate = jest.fn();
+
+import React from 'react';
+import { fireEvent, render } from '@testing-library/react-native';
+import BracketScreen from '../BracketScreen';
+import { useBracketDataContext } from '../../context/BracketDataContext';
+
+describe('BracketScreen', () => {
+  beforeEach(() => {
+    mockNavigate.mockClear();
+  });
+
+  it('shows a loading indicator while data is null', async () => {
+    (useBracketDataContext as jest.Mock).mockReturnValue({ bracket: null, ratings: null, error: null });
+    const { getByTestId } = await render(<BracketScreen />);
+    expect(getByTestId('bracket-loading')).toBeTruthy();
+  });
+
+  it('shows the error message when loading failed', async () => {
+    (useBracketDataContext as jest.Mock).mockReturnValue({ bracket: null, ratings: null, error: 'network down' });
+    const { getByTestId } = await render(<BracketScreen />);
+    expect(getByTestId('bracket-error').props.children).toBe('network down');
+  });
+
+  it('renders group teams and navigates to TeamDetail on press', async () => {
+    (useBracketDataContext as jest.Mock).mockReturnValue({
+      bracket: {
+        groups: [
+          { groupName: 'GROUP_A', team: 'Argentina', played: 1, won: 1, draw: 0, lost: 0, goalsFor: 2, goalsAgainst: 0, points: 3 },
+        ],
+        matches: [],
+      },
+      ratings: new Map(),
+      error: null,
+    });
+    const { getByText } = await render(<BracketScreen />);
+    fireEvent.press(getByText('Argentina — 3 pts'));
+    expect(mockNavigate).toHaveBeenCalledWith('TeamDetail', { team: 'Argentina' });
+  });
+
+  it('renders knockout matches grouped by stage with scores or "vs" for undetermined slots', async () => {
+    (useBracketDataContext as jest.Mock).mockReturnValue({
+      bracket: {
+        groups: [],
+        matches: [
+          {
+            id: 1,
+            stage: 'LAST_16',
+            utcDate: '2026-07-01T18:00:00Z',
+            homeTeam: 'Argentina',
+            awayTeam: 'Brazil',
+            homeScore: 2,
+            awayScore: 1,
+            status: 'FINISHED',
+          },
+          {
+            id: 2,
+            stage: 'QUARTER_FINALS',
+            utcDate: '2026-07-05T18:00:00Z',
+            homeTeam: 'TBD',
+            awayTeam: 'TBD',
+            homeScore: null,
+            awayScore: null,
+            status: 'SCHEDULED',
+          },
+        ],
+      },
+      ratings: new Map(),
+      error: null,
+    });
+
+    const { getByText, getByTestId } = await render(<BracketScreen />);
+
+    expect(getByText('Round of 16')).toBeTruthy();
+    expect(getByTestId('knockout-match-1').props.children).toBe('Argentina 2 - 1 Brazil');
+
+    expect(getByText('Quarterfinals')).toBeTruthy();
+    expect(getByTestId('knockout-match-2').props.children).toBe('TBD vs TBD');
+  });
+});
+```
+
+- [ ] **Step 2: Run the test to verify the new case fails**
+
+Run: `npx jest src/screens/__tests__/BracketScreen.test.tsx`
+Expected: the first three tests still pass; the new "renders knockout matches" test fails because no knockout section/testIDs exist yet.
+
+- [ ] **Step 3: Implement the updated `src/screens/BracketScreen.tsx`**
+
+```tsx
+import React from 'react';
+import { SectionList, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useBracketDataContext } from '../context/BracketDataContext';
+import { BracketStackParamList } from '../navigation/RootNavigator';
+import { GroupStanding, BracketMatch } from '../domain/bracket';
+
+type Navigation = NativeStackNavigationProp<BracketStackParamList, 'Bracket'>;
+
+const STAGE_LABELS: Record<string, string> = {
+  LAST_32: 'Round of 32',
+  LAST_16: 'Round of 16',
+  QUARTER_FINALS: 'Quarterfinals',
+  SEMI_FINALS: 'Semifinals',
+  FINAL: 'Final',
+};
+
+const STAGE_ORDER = ['LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINAL'];
+
+function formatMatchLine(match: BracketMatch): string {
+  const scoreText =
+    match.homeScore !== null && match.awayScore !== null
+      ? `${match.homeScore} - ${match.awayScore}`
+      : 'vs';
+  return `${match.homeTeam} ${scoreText} ${match.awayTeam}`;
+}
+
+interface GroupSection {
+  kind: 'group';
+  title: string;
+  data: GroupStanding[];
+}
+
+interface KnockoutSection {
+  kind: 'knockout';
+  title: string;
+  data: BracketMatch[];
+}
+
+type Section = GroupSection | KnockoutSection;
+
+export default function BracketScreen() {
+  const navigation = useNavigation<Navigation>();
+  const { bracket, error } = useBracketDataContext();
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text testID="bracket-error">{error}</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!bracket) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator testID="bracket-loading" />
+      </SafeAreaView>
+    );
+  }
+
+  const groupNames = Array.from(new Set(bracket.groups.map((g) => g.groupName))).sort();
+  const groupSections: GroupSection[] = groupNames.map((groupName) => ({
+    kind: 'group',
+    title: groupName,
+    data: bracket.groups.filter((g) => g.groupName === groupName),
+  }));
+
+  const knockoutSections: KnockoutSection[] = STAGE_ORDER.filter((stage) =>
+    bracket.matches.some((m) => m.stage === stage)
+  ).map((stage) => ({
+    kind: 'knockout',
+    title: STAGE_LABELS[stage] ?? stage,
+    data: bracket.matches.filter((m) => m.stage === stage),
+  }));
+
+  const sections: Section[] = [...groupSections, ...knockoutSections];
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <SectionList
+        testID="bracket-list"
+        sections={sections}
+        keyExtractor={(item, index) =>
+          'groupName' in item ? `${item.groupName}-${(item as GroupStanding).team}` : `match-${(item as BracketMatch).id}-${index}`
+        }
+        renderSectionHeader={({ section }) => <Text style={styles.groupHeader}>{section.title}</Text>}
+        renderItem={({ item, section }) => {
+          if (section.kind === 'group') {
+            const standing = item as GroupStanding;
+            return (
+              <TouchableOpacity onPress={() => navigation.navigate('TeamDetail', { team: standing.team })}>
+                <Text>{`${standing.team} — ${standing.points} pts`}</Text>
+              </TouchableOpacity>
+            );
+          }
+          const match = item as BracketMatch;
+          return <Text testID={`knockout-match-${match.id}`}>{formatMatchLine(match)}</Text>;
+        }}
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  groupHeader: { fontWeight: 'bold', padding: 8, backgroundColor: '#eee' },
+});
+```
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `npx jest src/screens/__tests__/BracketScreen.test.tsx`
+Expected: `4 passed`
+
+- [ ] **Step 5: Run the full suite to confirm no regressions**
+
+Run: `npx jest`
+Expected: all suites pass, one more test than before this task.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/screens/BracketScreen.tsx src/screens/__tests__/BracketScreen.test.tsx
+git commit -m "feat: render knockout bracket matches alongside group standings"
+```
+
+---
+
+### Task 20: Team Match History + Error Handling in Team Detail
+
+**Files:**
+- Modify: `src/screens/TeamDetailScreen.tsx`
+- Modify: `src/screens/__tests__/TeamDetailScreen.test.tsx`
+
+**Interfaces:**
+- Consumes: `BracketMatch` (from `../domain/bracket`, Task 9), `useBracketDataContext` (Task 13) — no new exports.
+
+**Global Constraints still apply:** TDD mandate; `await render(...)`; `SafeAreaView` from `react-native-safe-area-context`.
+
+- [ ] **Step 1: Write the failing tests**
+
+`src/screens/__tests__/TeamDetailScreen.test.tsx` (full replacement):
+
+```tsx
+jest.mock('../../context/BracketDataContext');
+jest.mock('@react-navigation/native', () => ({
+  useRoute: () => ({ params: { team: 'Argentina' } }),
+}));
+
+import React from 'react';
+import { render } from '@testing-library/react-native';
+import TeamDetailScreen from '../TeamDetailScreen';
+import { useBracketDataContext } from '../../context/BracketDataContext';
+
+describe('TeamDetailScreen', () => {
+  it('shows a loading message when ratings are not yet available', async () => {
+    (useBracketDataContext as jest.Mock).mockReturnValue({ bracket: null, ratings: null, error: null });
+    const { getByTestId } = await render(<TeamDetailScreen />);
+    expect(getByTestId('team-rating').props.children).toBe('Loading rating…');
+  });
+
+  it('shows the team name and rounded rating once loaded', async () => {
+    (useBracketDataContext as jest.Mock).mockReturnValue({
+      bracket: null,
+      ratings: new Map([['Argentina', { team: 'Argentina', rating: 1834.6, source: 'seed' }]]),
+      error: null,
+    });
+    const { getByText, getByTestId } = await render(<TeamDetailScreen />);
+    expect(getByText('Argentina')).toBeTruthy();
+    expect(getByTestId('team-rating').props.children).toBe('Rating: 1835');
+  });
+
+  it('shows the error message when loading failed', async () => {
+    (useBracketDataContext as jest.Mock).mockReturnValue({ bracket: null, ratings: null, error: 'network down' });
+    const { getByTestId } = await render(<TeamDetailScreen />);
+    expect(getByTestId('team-detail-error').props.children).toBe('network down');
+  });
+
+  it("lists the team's matches so far, formatted with scores or \"vs\" for undetermined opponents", async () => {
+    (useBracketDataContext as jest.Mock).mockReturnValue({
+      bracket: {
+        groups: [],
+        matches: [
+          {
+            id: 1,
+            stage: 'GROUP_STAGE',
+            utcDate: '2026-06-15T18:00:00Z',
+            homeTeam: 'Argentina',
+            awayTeam: 'Brazil',
+            homeScore: 2,
+            awayScore: 0,
+            status: 'FINISHED',
+          },
+          {
+            id: 2,
+            stage: 'LAST_16',
+            utcDate: '2026-07-01T18:00:00Z',
+            homeTeam: 'Argentina',
+            awayTeam: 'TBD',
+            homeScore: null,
+            awayScore: null,
+            status: 'SCHEDULED',
+          },
+          {
+            id: 3,
+            stage: 'GROUP_STAGE',
+            utcDate: '2026-06-10T18:00:00Z',
+            homeTeam: 'France',
+            awayTeam: 'Germany',
+            homeScore: 1,
+            awayScore: 1,
+            status: 'FINISHED',
+          },
+        ],
+      },
+      ratings: new Map([['Argentina', { team: 'Argentina', rating: 1800, source: 'seed' }]]),
+      error: null,
+    });
+
+    const { getByTestId, queryByTestId } = await render(<TeamDetailScreen />);
+
+    expect(getByTestId('team-match-1').props.children).toBe('Argentina 2 - 0 Brazil');
+    expect(getByTestId('team-match-2').props.children).toBe('Argentina vs TBD');
+    expect(queryByTestId('team-match-3')).toBeNull();
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests to verify the new cases fail**
+
+Run: `npx jest src/screens/__tests__/TeamDetailScreen.test.tsx`
+Expected: the original two tests still pass; the new error and match-history tests fail (no `team-detail-error` testID, no match rows rendered).
+
+- [ ] **Step 3: Implement the updated `src/screens/TeamDetailScreen.tsx`**
+
+```tsx
+import React from 'react';
+import { Text, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { RouteProp, useRoute } from '@react-navigation/native';
+import { useBracketDataContext } from '../context/BracketDataContext';
+import { BracketStackParamList } from '../navigation/RootNavigator';
+import { BracketMatch } from '../domain/bracket';
+
+type TeamDetailRoute = RouteProp<BracketStackParamList, 'TeamDetail'>;
+
+function formatMatchLine(match: BracketMatch): string {
+  const scoreText =
+    match.homeScore !== null && match.awayScore !== null
+      ? `${match.homeScore} - ${match.awayScore}`
+      : 'vs';
+  return `${match.homeTeam} ${scoreText} ${match.awayTeam}`;
+}
+
+export default function TeamDetailScreen() {
+  const route = useRoute<TeamDetailRoute>();
+  const { bracket, ratings, error } = useBracketDataContext();
+  const rating = ratings?.get(route.params.team);
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text testID="team-detail-error">{error}</Text>
+      </SafeAreaView>
+    );
+  }
+
+  const teamMatches =
+    bracket?.matches.filter(
+      (m) => m.homeTeam === route.params.team || m.awayTeam === route.params.team
+    ) ?? [];
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <Text style={styles.title}>{route.params.team}</Text>
+      <Text testID="team-rating">
+        {rating ? `Rating: ${Math.round(rating.rating)}` : 'Loading rating…'}
+      </Text>
+      {teamMatches.map((match) => (
+        <Text key={match.id} testID={`team-match-${match.id}`}>
+          {formatMatchLine(match)}
+        </Text>
+      ))}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 16 },
+  title: { fontSize: 24, fontWeight: 'bold' },
+});
+```
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `npx jest src/screens/__tests__/TeamDetailScreen.test.tsx`
+Expected: `4 passed`
+
+- [ ] **Step 5: Run the full suite to confirm no regressions**
+
+Run: `npx jest`
+Expected: all suites pass, three more tests than before this task (one from Task 19, two net-new here replacing the original two — total +3 including the replaced pair).
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/screens/TeamDetailScreen.tsx src/screens/__tests__/TeamDetailScreen.test.tsx
+git commit -m "feat: show team match history and surface load errors on Team Detail"
+```

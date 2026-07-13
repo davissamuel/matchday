@@ -1,0 +1,61 @@
+import { getCached } from '../cache';
+
+function fakeStorage() {
+  const store = new Map<string, string>();
+  return {
+    getItem: jest.fn((key: string) => Promise.resolve(store.get(key) ?? null)),
+    setItem: jest.fn((key: string, value: string) => {
+      store.set(key, value);
+      return Promise.resolve();
+    }),
+  };
+}
+
+describe('getCached', () => {
+  it('calls the fetcher and caches the result on a cache miss', async () => {
+    const storage = fakeStorage();
+    const fetcher = jest.fn(() => Promise.resolve({ value: 42 }));
+    const result = await getCached('key', 60000, fetcher, storage);
+    expect(result).toEqual({ value: 42 });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(storage.setItem).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns the cached value without calling the fetcher when still fresh', async () => {
+    const storage = fakeStorage();
+    const fetcher = jest.fn(() => Promise.resolve({ value: 1 }));
+    await getCached('key', 60000, fetcher, storage);
+    const result = await getCached('key', 60000, fetcher, storage);
+    expect(result).toEqual({ value: 1 });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it('refetches when the cached value has expired', async () => {
+    const storage = fakeStorage();
+    let call = 0;
+    const fetcher = jest.fn(() => Promise.resolve({ value: ++call }));
+    await getCached('key', 0, fetcher, storage);
+    const result = await getCached('key', 0, fetcher, storage);
+    expect(result).toEqual({ value: 2 });
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it('deduplicates concurrent in-flight requests for the same key', async () => {
+    const storage = fakeStorage();
+    let resolveFetch: (value: { value: number }) => void;
+    const pending = new Promise<{ value: number }>((resolve) => {
+      resolveFetch = resolve;
+    });
+    const fetcher = jest.fn(() => pending);
+
+    const promiseA = getCached('key', 60000, fetcher, storage);
+    const promiseB = getCached('key', 60000, fetcher, storage);
+
+    resolveFetch!({ value: 42 });
+
+    const [a, b] = await Promise.all([promiseA, promiseB]);
+    expect(a).toEqual({ value: 42 });
+    expect(b).toEqual({ value: 42 });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+});
