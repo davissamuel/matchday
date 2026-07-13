@@ -5,10 +5,18 @@ import { useBracketDataContext } from '../context/BracketDataContext';
 import { matchProbability, simulateMatch } from '../domain/probability';
 
 export default function SimulationScreen() {
-  const { bracket, ratings } = useBracketDataContext();
+  const { bracket, ratings, error } = useBracketDataContext();
   const [teamA, setTeamA] = useState<string | null>(null);
   const [teamB, setTeamB] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text testID="simulation-error">{error}</Text>
+      </SafeAreaView>
+    );
+  }
 
   if (!bracket || !ratings) {
     return (

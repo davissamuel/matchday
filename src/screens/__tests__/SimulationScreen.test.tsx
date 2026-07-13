@@ -29,6 +29,12 @@ describe('SimulationScreen', () => {
     expect(getByTestId('simulation-loading')).toBeTruthy();
   });
 
+  it('shows the error message when loading failed', async () => {
+    (useBracketDataContext as jest.Mock).mockReturnValue({ bracket: null, ratings: null, error: 'network down' });
+    const { getByTestId } = await render(<SimulationScreen />);
+    expect(getByTestId('simulation-error').props.children).toBe('network down');
+  });
+
   it('shows a probability breakdown once two teams are selected', async () => {
     mockContext();
     const { getByTestId } = await render(<SimulationScreen />);
