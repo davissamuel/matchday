@@ -4,7 +4,7 @@ jest.mock('expo-constants', () => ({
 }));
 
 import Constants from 'expo-constants';
-import { getFootballDataApiKey } from '../env';
+import { getFootballDataApiKey, shouldUseMockData } from '../env';
 
 describe('getFootballDataApiKey', () => {
   afterEach(() => {
@@ -23,5 +23,25 @@ describe('getFootballDataApiKey', () => {
   it('throws when the key is not a string', () => {
     (Constants as any).expoConfig.extra.footballDataApiKey = 12345;
     expect(() => getFootballDataApiKey()).toThrow(/FOOTBALL_DATA_API_KEY/);
+  });
+});
+
+describe('shouldUseMockData', () => {
+  afterEach(() => {
+    (Constants as any).expoConfig.extra = {};
+  });
+
+  it('returns false when useMockData is not set', () => {
+    expect(shouldUseMockData()).toBe(false);
+  });
+
+  it('returns true when useMockData is set to true', () => {
+    (Constants as any).expoConfig.extra.useMockData = true;
+    expect(shouldUseMockData()).toBe(true);
+  });
+
+  it('returns false when useMockData is set to false', () => {
+    (Constants as any).expoConfig.extra.useMockData = false;
+    expect(shouldUseMockData()).toBe(false);
   });
 });

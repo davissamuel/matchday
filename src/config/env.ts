@@ -9,3 +9,7 @@ export function getFootballDataApiKey(): string {
   }
   return key;
 }
+
+export function shouldUseMockData(): boolean {
+  return Constants.expoConfig?.extra?.useMockData === true;
+}

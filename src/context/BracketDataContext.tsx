@@ -2,7 +2,8 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { loadBracketData, BracketData } from '../domain/loadBracketData';
 import { loadTeamRatings } from '../domain/loadTeamRatings';
 import { TeamRating } from '../domain/types';
-import { getFootballDataApiKey } from '../config/env';
+import { getFootballDataApiKey, shouldUseMockData } from '../config/env';
+import { MOCK_BRACKET_DATA, MOCK_RATINGS } from '../domain/mockData';
 
 interface BracketDataContextValue {
   bracket: BracketData | null;
@@ -24,6 +25,11 @@ export function BracketDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     async function load() {
       try {
+        if (shouldUseMockData()) {
+          setBracket(MOCK_BRACKET_DATA);
+          setRatings(MOCK_RATINGS);
+          return;
+        }
         const data = await loadBracketData({ apiKey: getFootballDataApiKey() });
         setBracket(data);
         const teams = Array.from(new Set(data.groups.map((g) => g.team)));

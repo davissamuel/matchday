@@ -19,6 +19,7 @@ const config: ExpoConfig = {
   },
   extra: {
     footballDataApiKey: process.env.FOOTBALL_DATA_API_KEY,
+    useMockData: process.env.USE_MOCK_DATA === 'true',
   },
 };
 

@@ -1,6 +1,9 @@
 jest.mock('../../domain/loadBracketData');
 jest.mock('../../domain/loadTeamRatings');
-jest.mock('../../config/env', () => ({ getFootballDataApiKey: jest.fn(() => 'test-key') }));
+jest.mock('../../config/env', () => ({
+  getFootballDataApiKey: jest.fn(() => 'test-key'),
+  shouldUseMockData: jest.fn(() => false),
+}));
 
 import React from 'react';
 import { Text } from 'react-native';
@@ -8,7 +11,8 @@ import { render, waitFor } from '@testing-library/react-native';
 import { BracketDataProvider, useBracketDataContext } from '../BracketDataContext';
 import { loadBracketData } from '../../domain/loadBracketData';
 import { loadTeamRatings } from '../../domain/loadTeamRatings';
-import { getFootballDataApiKey } from '../../config/env';
+import { getFootballDataApiKey, shouldUseMockData } from '../../config/env';
+import { MOCK_BRACKET_DATA, MOCK_RATINGS } from '../../domain/mockData';
 
 function Consumer() {
   const { bracket, ratings, error } = useBracketDataContext();
@@ -76,6 +80,20 @@ describe('BracketDataProvider', () => {
 
     await waitFor(() =>
       expect(getByText('Missing FOOTBALL_DATA_API_KEY. Set it in your environment.')).toBeTruthy()
+    );
+  });
+
+  it('loads mock data instead of calling the real API when shouldUseMockData is true', async () => {
+    (shouldUseMockData as jest.Mock).mockReturnValueOnce(true);
+
+    const { getByText } = await render(
+      <BracketDataProvider>
+        <Consumer />
+      </BracketDataProvider>
+    );
+
+    await waitFor(() =>
+      expect(getByText(`${MOCK_BRACKET_DATA.groups.length}-${MOCK_RATINGS.size}`)).toBeTruthy()
     );
   });
 });
