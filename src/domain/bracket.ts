@@ -53,6 +53,14 @@ export function normalizeStandings(raw: FootballDataStandingsResponse): GroupSta
   return result;
 }
 
+export function formatMatchLine(match: BracketMatch): string {
+  const scoreText =
+    match.homeScore !== null && match.awayScore !== null
+      ? `${match.homeScore} - ${match.awayScore}`
+      : 'vs';
+  return `${match.homeTeam} ${scoreText} ${match.awayTeam}`;
+}
+
 export function normalizeMatches(raw: FootballDataMatchesResponse): BracketMatch[] {
   return raw.matches.map((match) => ({
     id: match.id,

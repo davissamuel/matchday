@@ -4,17 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { useBracketDataContext } from '../context/BracketDataContext';
 import { BracketStackParamList } from '../navigation/RootNavigator';
-import { BracketMatch } from '../domain/bracket';
+import { BracketMatch, formatMatchLine } from '../domain/bracket';
 
 type TeamDetailRoute = RouteProp<BracketStackParamList, 'TeamDetail'>;
-
-function formatMatchLine(match: BracketMatch): string {
-  const scoreText =
-    match.homeScore !== null && match.awayScore !== null
-      ? `${match.homeScore} - ${match.awayScore}`
-      : 'vs';
-  return `${match.homeTeam} ${scoreText} ${match.awayTeam}`;
-}
 
 export default function TeamDetailScreen() {
   const route = useRoute<TeamDetailRoute>();
