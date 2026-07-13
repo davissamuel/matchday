@@ -7,6 +7,8 @@ interface CacheEnvelope<T> {
 
 type Storage = Pick<typeof AsyncStorage, 'getItem' | 'setItem'>;
 
+const inFlight = new Map<string, Promise<unknown>>();
+
 export async function getCached<T>(
   key: string,
   ttlMs: number,
@@ -20,7 +22,22 @@ export async function getCached<T>(
       return parsed.data;
     }
   }
-  const data = await fetcher();
-  await storage.setItem(key, JSON.stringify({ timestamp: Date.now(), data }));
-  return data;
+
+  const existing = inFlight.get(key);
+  if (existing) {
+    return existing as Promise<T>;
+  }
+
+  const fetchPromise = (async () => {
+    try {
+      const data = await fetcher();
+      await storage.setItem(key, JSON.stringify({ timestamp: Date.now(), data }));
+      return data;
+    } finally {
+      inFlight.delete(key);
+    }
+  })();
+
+  inFlight.set(key, fetchPromise);
+  return fetchPromise;
 }
