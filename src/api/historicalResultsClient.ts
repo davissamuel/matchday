@@ -1,7 +1,10 @@
 import Papa from 'papaparse';
 import { HistoricalMatch } from '../domain/types';
+import { normalizeTeamName } from '../domain/teamNameAliases';
 
-export type CsvFetchFn = (url: string) => Promise<{ text: () => Promise<string> }>;
+export type CsvFetchFn = (
+  url: string
+) => Promise<{ ok: boolean; status: number; text: () => Promise<string> }>;
 
 const DEFAULT_CSV_URL =
   'https://raw.githubusercontent.com/martj42/international_results/master/results.csv';
@@ -12,6 +15,9 @@ export async function fetchHistoricalMatches(
   csvUrl: string = DEFAULT_CSV_URL
 ): Promise<HistoricalMatch[]> {
   const response = await fetchFn(csvUrl);
+  if (!response.ok) {
+    throw new Error(`historical results request failed: ${response.status}`);
+  }
   const csvText = await response.text();
   const parsed = Papa.parse<Record<string, string>>(csvText, {
     header: true,
@@ -28,8 +34,8 @@ export async function fetchHistoricalMatches(
     }
     matches.push({
       date: row.date,
-      homeTeam: row.home_team,
-      awayTeam: row.away_team,
+      homeTeam: normalizeTeamName(row.home_team),
+      awayTeam: normalizeTeamName(row.away_team),
       homeScore,
       awayScore,
     });
