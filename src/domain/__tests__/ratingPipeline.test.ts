@@ -21,4 +21,14 @@ describe('buildTeamRatings', () => {
     const result = buildTeamRatings(['NewTeam'], [], new Map());
     expect(result.get('NewTeam')).toEqual({ team: 'NewTeam', rating: DEFAULT_RATING, source: 'default' });
   });
+
+  it('uses the seed rating as the starting point when a team also has historical matches', () => {
+    const matches: HistoricalMatch[] = [
+      { date: '2023-01-01', homeTeam: 'Argentina', awayTeam: 'Brazil', homeScore: 1, awayScore: 0 },
+    ];
+    const seedRatings = new Map([['Argentina', 2000]]);
+    const result = buildTeamRatings(['Argentina'], matches, seedRatings);
+    expect(result.get('Argentina')?.source).toBe('history');
+    expect(result.get('Argentina')?.rating).toBeGreaterThan(2000);
+  });
 });

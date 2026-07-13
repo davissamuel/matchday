@@ -15,7 +15,6 @@ export function buildTeamRatings(
 
   const initial = new Map<string, number>();
   for (const team of teams) {
-    if (teamsWithHistory.has(team)) continue;
     initial.set(team, seedRatings.get(team) ?? defaultRating);
   }
 
