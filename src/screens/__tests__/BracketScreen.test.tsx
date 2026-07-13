@@ -42,4 +42,44 @@ describe('BracketScreen', () => {
     fireEvent.press(getByText('Argentina — 3 pts'));
     expect(mockNavigate).toHaveBeenCalledWith('TeamDetail', { team: 'Argentina' });
   });
+
+  it('renders knockout matches grouped by stage with scores or "vs" for undetermined slots', async () => {
+    (useBracketDataContext as jest.Mock).mockReturnValue({
+      bracket: {
+        groups: [],
+        matches: [
+          {
+            id: 1,
+            stage: 'LAST_16',
+            utcDate: '2026-07-01T18:00:00Z',
+            homeTeam: 'Argentina',
+            awayTeam: 'Brazil',
+            homeScore: 2,
+            awayScore: 1,
+            status: 'FINISHED',
+          },
+          {
+            id: 2,
+            stage: 'QUARTER_FINALS',
+            utcDate: '2026-07-05T18:00:00Z',
+            homeTeam: 'TBD',
+            awayTeam: 'TBD',
+            homeScore: null,
+            awayScore: null,
+            status: 'SCHEDULED',
+          },
+        ],
+      },
+      ratings: new Map(),
+      error: null,
+    });
+
+    const { getByText, getByTestId } = await render(<BracketScreen />);
+
+    expect(getByText('Round of 16')).toBeTruthy();
+    expect(getByTestId('knockout-match-1').props.children).toBe('Argentina 2 - 1 Brazil');
+
+    expect(getByText('Quarterfinals')).toBeTruthy();
+    expect(getByTestId('knockout-match-2').props.children).toBe('TBD vs TBD');
+  });
 });

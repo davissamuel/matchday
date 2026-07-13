@@ -5,8 +5,41 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useBracketDataContext } from '../context/BracketDataContext';
 import { BracketStackParamList } from '../navigation/RootNavigator';
+import { GroupStanding, BracketMatch } from '../domain/bracket';
 
 type Navigation = NativeStackNavigationProp<BracketStackParamList, 'Bracket'>;
+
+const STAGE_LABELS: Record<string, string> = {
+  LAST_32: 'Round of 32',
+  LAST_16: 'Round of 16',
+  QUARTER_FINALS: 'Quarterfinals',
+  SEMI_FINALS: 'Semifinals',
+  FINAL: 'Final',
+};
+
+const STAGE_ORDER = ['LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINAL'];
+
+function formatMatchLine(match: BracketMatch): string {
+  const scoreText =
+    match.homeScore !== null && match.awayScore !== null
+      ? `${match.homeScore} - ${match.awayScore}`
+      : 'vs';
+  return `${match.homeTeam} ${scoreText} ${match.awayTeam}`;
+}
+
+interface GroupSection {
+  kind: 'group';
+  title: string;
+  data: GroupStanding[];
+}
+
+interface KnockoutSection {
+  kind: 'knockout';
+  title: string;
+  data: BracketMatch[];
+}
+
+type Section = GroupSection | KnockoutSection;
 
 export default function BracketScreen() {
   const navigation = useNavigation<Navigation>();
@@ -29,23 +62,43 @@ export default function BracketScreen() {
   }
 
   const groupNames = Array.from(new Set(bracket.groups.map((g) => g.groupName))).sort();
-  const sections = groupNames.map((groupName) => ({
+  const groupSections: GroupSection[] = groupNames.map((groupName) => ({
+    kind: 'group',
     title: groupName,
     data: bracket.groups.filter((g) => g.groupName === groupName),
   }));
+
+  const knockoutSections: KnockoutSection[] = STAGE_ORDER.filter((stage) =>
+    bracket.matches.some((m) => m.stage === stage)
+  ).map((stage) => ({
+    kind: 'knockout',
+    title: STAGE_LABELS[stage] ?? stage,
+    data: bracket.matches.filter((m) => m.stage === stage),
+  }));
+
+  const sections: Section[] = [...groupSections, ...knockoutSections];
 
   return (
     <SafeAreaView style={styles.container}>
       <SectionList
         testID="bracket-list"
         sections={sections}
-        keyExtractor={(item) => `${item.groupName}-${item.team}`}
+        keyExtractor={(item, index) =>
+          'groupName' in item ? `${item.groupName}-${(item as GroupStanding).team}` : `match-${(item as BracketMatch).id}-${index}`
+        }
         renderSectionHeader={({ section }) => <Text style={styles.groupHeader}>{section.title}</Text>}
-        renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => navigation.navigate('TeamDetail', { team: item.team })}>
-            <Text>{`${item.team} — ${item.points} pts`}</Text>
-          </TouchableOpacity>
-        )}
+        renderItem={({ item, section }) => {
+          if (section.kind === 'group') {
+            const standing = item as GroupStanding;
+            return (
+              <TouchableOpacity onPress={() => navigation.navigate('TeamDetail', { team: standing.team })}>
+                <Text>{`${standing.team} — ${standing.points} pts`}</Text>
+              </TouchableOpacity>
+            );
+          }
+          const match = item as BracketMatch;
+          return <Text testID={`knockout-match-${match.id}`}>{formatMatchLine(match)}</Text>;
+        }}
       />
     </SafeAreaView>
   );
