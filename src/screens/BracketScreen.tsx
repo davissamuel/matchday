@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useBracketDataContext } from '../context/BracketDataContext';
 import { BracketStackParamList } from '../navigation/RootNavigator';
-import { GroupStanding, BracketMatch } from '../domain/bracket';
+import { GroupStanding, BracketMatch, formatMatchLine } from '../domain/bracket';
 
 type Navigation = NativeStackNavigationProp<BracketStackParamList, 'Bracket'>;
 
@@ -17,15 +17,7 @@ const STAGE_LABELS: Record<string, string> = {
   FINAL: 'Final',
 };
 
-const STAGE_ORDER = ['LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINAL'];
-
-function formatMatchLine(match: BracketMatch): string {
-  const scoreText =
-    match.homeScore !== null && match.awayScore !== null
-      ? `${match.homeScore} - ${match.awayScore}`
-      : 'vs';
-  return `${match.homeTeam} ${scoreText} ${match.awayTeam}`;
-}
+const STAGE_ORDER = ['LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINAL'] as const;
 
 interface GroupSection {
   kind: 'group';
@@ -68,9 +60,14 @@ export default function BracketScreen() {
     data: bracket.groups.filter((g) => g.groupName === groupName),
   }));
 
-  const knockoutSections: KnockoutSection[] = STAGE_ORDER.filter((stage) =>
-    bracket.matches.some((m) => m.stage === stage)
-  ).map((stage) => ({
+  const knockoutStages = Array.from(new Set(bracket.matches.map((m) => m.stage))).filter(
+    (stage) => stage !== 'GROUP_STAGE'
+  );
+  const orderedKnownStages = STAGE_ORDER.filter((stage) => knockoutStages.includes(stage));
+  const unknownStages = knockoutStages.filter((stage) => !STAGE_ORDER.includes(stage));
+  const allKnockoutStages = [...orderedKnownStages, ...unknownStages];
+
+  const knockoutSections: KnockoutSection[] = allKnockoutStages.map((stage) => ({
     kind: 'knockout',
     title: STAGE_LABELS[stage] ?? stage,
     data: bracket.matches.filter((m) => m.stage === stage),

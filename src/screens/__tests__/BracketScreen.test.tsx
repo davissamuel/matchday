@@ -68,6 +68,16 @@ describe('BracketScreen', () => {
             awayScore: null,
             status: 'SCHEDULED',
           },
+          {
+            id: 3,
+            stage: 'THIRD_PLACE_FINAL',
+            utcDate: '2026-07-06T18:00:00Z',
+            homeTeam: 'Germany',
+            awayTeam: 'France',
+            homeScore: null,
+            awayScore: null,
+            status: 'SCHEDULED',
+          },
         ],
       },
       ratings: new Map(),
@@ -81,5 +91,8 @@ describe('BracketScreen', () => {
 
     expect(getByText('Quarterfinals')).toBeTruthy();
     expect(getByTestId('knockout-match-2').props.children).toBe('TBD vs TBD');
+
+    expect(getByText('THIRD_PLACE_FINAL')).toBeTruthy();
+    expect(getByTestId('knockout-match-3').props.children).toBe('Germany vs France');
   });
 });
