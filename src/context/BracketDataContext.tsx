@@ -22,15 +22,19 @@ export function BracketDataProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadBracketData({ apiKey: getFootballDataApiKey() })
-      .then(async (data) => {
+    async function load() {
+      try {
+        const data = await loadBracketData({ apiKey: getFootballDataApiKey() });
         setBracket(data);
         const teams = Array.from(new Set(data.groups.map((g) => g.team)));
         const finished = data.matches.filter((m) => m.status === 'FINISHED');
         const teamRatings = await loadTeamRatings(teams, finished);
         setRatings(teamRatings);
-      })
-      .catch((err: Error) => setError(err.message));
+      } catch (err) {
+        setError((err as Error).message);
+      }
+    }
+    load();
   }, []);
 
   return (

@@ -1,6 +1,6 @@
 jest.mock('../../domain/loadBracketData');
 jest.mock('../../domain/loadTeamRatings');
-jest.mock('../../config/env', () => ({ getFootballDataApiKey: () => 'test-key' }));
+jest.mock('../../config/env', () => ({ getFootballDataApiKey: jest.fn(() => 'test-key') }));
 
 import React from 'react';
 import { Text } from 'react-native';
@@ -8,6 +8,7 @@ import { render, waitFor } from '@testing-library/react-native';
 import { BracketDataProvider, useBracketDataContext } from '../BracketDataContext';
 import { loadBracketData } from '../../domain/loadBracketData';
 import { loadTeamRatings } from '../../domain/loadTeamRatings';
+import { getFootballDataApiKey } from '../../config/env';
 
 function Consumer() {
   const { bracket, ratings, error } = useBracketDataContext();
@@ -60,5 +61,21 @@ describe('BracketDataProvider', () => {
     );
 
     await waitFor(() => expect(getByText('network down')).toBeTruthy());
+  });
+
+  it('exposes an error message when getFootballDataApiKey throws synchronously', async () => {
+    (getFootballDataApiKey as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('Missing FOOTBALL_DATA_API_KEY. Set it in your environment.');
+    });
+
+    const { getByText } = await render(
+      <BracketDataProvider>
+        <Consumer />
+      </BracketDataProvider>
+    );
+
+    await waitFor(() =>
+      expect(getByText('Missing FOOTBALL_DATA_API_KEY. Set it in your environment.')).toBeTruthy()
+    );
   });
 });
