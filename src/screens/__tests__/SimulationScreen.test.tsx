@@ -37,10 +37,12 @@ describe('SimulationScreen', () => {
 
   it('shows a probability breakdown once two teams are selected', async () => {
     mockContext();
-    const { getByTestId } = await render(<SimulationScreen />);
+    const { getByTestId, getAllByText } = await render(<SimulationScreen />);
     await fireEvent.press(getByTestId('team-a-Argentina'));
     await fireEvent.press(getByTestId('team-b-Brazil'));
     expect(getByTestId('probability-display')).toBeTruthy();
+    expect(getAllByText('Argentina').length).toBeGreaterThan(0);
+    expect(getAllByText('Brazil').length).toBeGreaterThan(0);
   });
 
   it('shows a simulated result after pressing Simulate', async () => {

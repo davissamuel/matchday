@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useBracketDataContext } from '../context/BracketDataContext';
 import { matchProbability, simulateMatch } from '../domain/probability';
+import { ScreenContainer } from '../components/ScreenContainer';
+import { FlagLabel } from '../components/FlagLabel';
+import { ProbabilityBar } from '../components/ProbabilityBar';
 
 export default function SimulationScreen() {
   const { bracket, ratings, error } = useBracketDataContext();
@@ -12,17 +14,21 @@ export default function SimulationScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Text testID="simulation-error">{error}</Text>
-      </SafeAreaView>
+      <ScreenContainer>
+        <Text testID="simulation-error" className="mt-4 text-neutral-900 dark:text-neutral-50">
+          {error}
+        </Text>
+      </ScreenContainer>
     );
   }
 
   if (!bracket || !ratings) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Text testID="simulation-loading">Loading teams…</Text>
-      </SafeAreaView>
+      <ScreenContainer>
+        <Text testID="simulation-loading" className="mt-4 text-neutral-500 dark:text-neutral-400">
+          Loading teams…
+        </Text>
+      </ScreenContainer>
     );
   }
 
@@ -31,9 +37,9 @@ export default function SimulationScreen() {
     teamA && teamB ? matchProbability(ratings.get(teamA)!.rating, ratings.get(teamB)!.rating) : null;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <ScreenContainer>
       <ScrollView>
-        <Text style={styles.sectionTitle}>Team A</Text>
+        <Text className="mt-4 font-bold text-neutral-900 dark:text-neutral-50">Team A</Text>
         {teams.map((team) => (
           <TouchableOpacity
             key={`a-${team}`}
@@ -42,11 +48,12 @@ export default function SimulationScreen() {
               setTeamA(team);
               setResult(null);
             }}
+            className={`rounded-md px-2 py-1.5 ${team === teamA ? 'bg-accent/10' : ''}`}
           >
-            <Text style={team === teamA ? styles.selected : styles.option}>{team}</Text>
+            <FlagLabel team={team} />
           </TouchableOpacity>
         ))}
-        <Text style={styles.sectionTitle}>Team B</Text>
+        <Text className="mt-4 font-bold text-neutral-900 dark:text-neutral-50">Team B</Text>
         {teams.map((team) => (
           <TouchableOpacity
             key={`b-${team}`}
@@ -55,16 +62,20 @@ export default function SimulationScreen() {
               setTeamB(team);
               setResult(null);
             }}
+            className={`rounded-md px-2 py-1.5 ${team === teamB ? 'bg-accent/10' : ''}`}
           >
-            <Text style={team === teamB ? styles.selected : styles.option}>{team}</Text>
+            <FlagLabel team={team} />
           </TouchableOpacity>
         ))}
-        {probability && (
-          <Text testID="probability-display">
-            {`${teamA} win ${Math.round(probability.winProbability * 100)}% · draw ${Math.round(
-              probability.drawProbability * 100
-            )}% · ${teamB} win ${Math.round(probability.lossProbability * 100)}%`}
-          </Text>
+        {probability && teamA && teamB && (
+          <ProbabilityBar
+            testID="probability-display"
+            homeTeam={teamA}
+            awayTeam={teamB}
+            winProbability={probability.winProbability}
+            drawProbability={probability.drawProbability}
+            lossProbability={probability.lossProbability}
+          />
         )}
         {teamA && teamB && (
           <TouchableOpacity
@@ -74,20 +85,17 @@ export default function SimulationScreen() {
               const label = outcome === 'HOME_TEAM' ? teamA : outcome === 'AWAY_TEAM' ? teamB : 'Draw';
               setResult(`Result: ${label}`);
             }}
+            className="mt-4 rounded-full bg-accent px-4 py-3"
           >
-            <Text style={styles.simulateButton}>Simulate Match</Text>
+            <Text className="text-center font-bold text-white">Simulate Match</Text>
           </TouchableOpacity>
         )}
-        {result && <Text testID="simulation-result">{result}</Text>}
+        {result && (
+          <Text testID="simulation-result" className="mt-4 text-center text-lg font-bold text-neutral-900 dark:text-neutral-50">
+            {result}
+          </Text>
+        )}
       </ScrollView>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  sectionTitle: { fontWeight: 'bold', marginTop: 12 },
-  option: { padding: 6 },
-  selected: { padding: 6, fontWeight: 'bold', color: 'blue' },
-  simulateButton: { padding: 12, marginTop: 12, backgroundColor: '#ddd', textAlign: 'center' },
-});
