@@ -1,10 +1,12 @@
 import React from 'react';
-import { Text, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Text, View } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { useBracketDataContext } from '../context/BracketDataContext';
 import { BracketStackParamList } from '../navigation/RootNavigator';
-import { BracketMatch, formatMatchLine } from '../domain/bracket';
+import { ScreenContainer } from '../components/ScreenContainer';
+import { FlagLabel } from '../components/FlagLabel';
+import { StatPill } from '../components/StatPill';
+import { MatchCard } from '../components/MatchCard';
 
 type TeamDetailRoute = RouteProp<BracketStackParamList, 'TeamDetail'>;
 
@@ -15,9 +17,11 @@ export default function TeamDetailScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Text testID="team-detail-error">{error}</Text>
-      </SafeAreaView>
+      <ScreenContainer>
+        <Text testID="team-detail-error" className="mt-4 text-neutral-900 dark:text-neutral-50">
+          {error}
+        </Text>
+      </ScreenContainer>
     );
   }
 
@@ -27,21 +31,22 @@ export default function TeamDetailScreen() {
     ) ?? [];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>{route.params.team}</Text>
-      <Text testID="team-rating">
-        {rating ? `Rating: ${Math.round(rating.rating)}` : 'Loading rating…'}
-      </Text>
-      {teamMatches.map((match) => (
-        <Text key={match.id} testID={`team-match-${match.id}`}>
-          {formatMatchLine(match)}
-        </Text>
-      ))}
-    </SafeAreaView>
+    <ScreenContainer>
+      <View className="mt-4">
+        <FlagLabel team={route.params.team} className="mb-1" />
+        {rating ? (
+          <StatPill testID="team-rating" label="Rating" value={String(Math.round(rating.rating))} />
+        ) : (
+          <Text testID="team-rating" className="mt-2 text-neutral-500 dark:text-neutral-400">
+            Loading rating…
+          </Text>
+        )}
+      </View>
+      <View className="mt-4">
+        {teamMatches.map((match) => (
+          <MatchCard key={match.id} match={match} testID={`team-match-${match.id}`} />
+        ))}
+      </View>
+    </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  title: { fontSize: 24, fontWeight: 'bold' },
-});
