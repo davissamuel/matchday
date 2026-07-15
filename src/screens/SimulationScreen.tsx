@@ -48,7 +48,7 @@ export default function SimulationScreen() {
               setTeamA(team);
               setResult(null);
             }}
-            className={`rounded-md px-2 py-1.5 ${team === teamA ? 'bg-accent/10' : ''}`}
+            className={`rounded-md px-2 py-1.5 ${team === teamA ? 'bg-accent/10 dark:bg-accent-dark/10' : ''}`}
           >
             <FlagLabel team={team} />
           </TouchableOpacity>
@@ -62,7 +62,7 @@ export default function SimulationScreen() {
               setTeamB(team);
               setResult(null);
             }}
-            className={`rounded-md px-2 py-1.5 ${team === teamB ? 'bg-accent/10' : ''}`}
+            className={`rounded-md px-2 py-1.5 ${team === teamB ? 'bg-accent/10 dark:bg-accent-dark/10' : ''}`}
           >
             <FlagLabel team={team} />
           </TouchableOpacity>
@@ -85,7 +85,7 @@ export default function SimulationScreen() {
               const label = outcome === 'HOME_TEAM' ? teamA : outcome === 'AWAY_TEAM' ? teamB : 'Draw';
               setResult(`Result: ${label}`);
             }}
-            className="mt-4 rounded-full bg-accent px-4 py-3"
+            className="mt-4 rounded-full bg-accent px-4 py-3 dark:bg-accent-dark"
           >
             <Text className="text-center font-bold text-white">Simulate Match</Text>
           </TouchableOpacity>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { SectionList, Text, TouchableOpacity, ActivityIndicator, View } from 'react-native';
+import { SectionList, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useBracketDataContext } from '../context/BracketDataContext';
@@ -106,7 +106,7 @@ export default function BracketScreen() {
                 testID={`standing-row-${standing.team}`}
                 onPress={() => navigation.navigate('TeamDetail', { team: standing.team })}
                 className={`flex-row items-center justify-between border-l-4 px-2 py-2 ${
-                  qualifying ? 'border-accent' : 'border-transparent'
+                  qualifying ? 'border-accent dark:border-accent-dark' : 'border-transparent'
                 }`}
               >
                 <FlagLabel team={standing.team} />

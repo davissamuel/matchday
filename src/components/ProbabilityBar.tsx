@@ -30,7 +30,7 @@ export function ProbabilityBar({
         <Text className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">{`${lossPct}%`}</Text>
       </View>
       <View className="h-3 w-full flex-row overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
-        <View className="h-full bg-accent" style={{ width: `${winPct}%` }} />
+        <View className="h-full bg-accent dark:bg-accent-dark" style={{ width: `${winPct}%` }} />
         <View className="h-full bg-neutral-400 dark:bg-neutral-600" style={{ width: `${drawPct}%` }} />
         <View className="h-full bg-neutral-900 dark:bg-neutral-100" style={{ width: `${lossPct}%` }} />
       </View>
