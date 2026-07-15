@@ -46,3 +46,6 @@ yarn-error.*
 
 # subagent-driven-development scratch space
 .superpowers/
+
+# Claude Code local config
+.claude/
