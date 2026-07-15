@@ -1,11 +1,14 @@
 import React from 'react';
-import { SectionList, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SectionList, Text, TouchableOpacity, ActivityIndicator, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useBracketDataContext } from '../context/BracketDataContext';
 import { BracketStackParamList } from '../navigation/RootNavigator';
-import { GroupStanding, BracketMatch, formatMatchLine } from '../domain/bracket';
+import { GroupStanding, BracketMatch } from '../domain/bracket';
+import { ScreenContainer } from '../components/ScreenContainer';
+import { FlagLabel } from '../components/FlagLabel';
+import { MatchCard } from '../components/MatchCard';
+import { colors } from '../theme/colors';
 
 type Navigation = NativeStackNavigationProp<BracketStackParamList, 'Bracket'>;
 
@@ -39,17 +42,19 @@ export default function BracketScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Text testID="bracket-error">{error}</Text>
-      </SafeAreaView>
+      <ScreenContainer>
+        <Text testID="bracket-error" className="mt-4 text-neutral-900 dark:text-neutral-50">
+          {error}
+        </Text>
+      </ScreenContainer>
     );
   }
 
   if (!bracket) {
     return (
-      <SafeAreaView style={styles.container}>
-        <ActivityIndicator testID="bracket-loading" />
-      </SafeAreaView>
+      <ScreenContainer>
+        <ActivityIndicator testID="bracket-loading" color={colors.light.accent} className="mt-4" />
+      </ScreenContainer>
     );
   }
 
@@ -76,32 +81,45 @@ export default function BracketScreen() {
   const sections: Section[] = [...groupSections, ...knockoutSections];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <ScreenContainer>
       <SectionList
         testID="bracket-list"
         sections={sections}
         keyExtractor={(item, index) =>
           'groupName' in item ? `${item.groupName}-${(item as GroupStanding).team}` : `match-${(item as BracketMatch).id}-${index}`
         }
-        renderSectionHeader={({ section }) => <Text style={styles.groupHeader}>{section.title}</Text>}
+        renderSectionHeader={({ section }) => (
+          <Text className="mt-4 bg-neutral-100 px-2 py-2 font-bold text-neutral-900 dark:bg-neutral-900 dark:text-neutral-50">
+            {section.title}
+          </Text>
+        )}
         renderItem={({ item, section }) => {
           if (section.kind === 'group') {
             const standing = item as GroupStanding;
+            const qualifying = bracket.groups
+              .filter((g) => g.groupName === standing.groupName)
+              .sort((a, b) => b.points - a.points)
+              .slice(0, 2)
+              .some((g) => g.team === standing.team);
             return (
-              <TouchableOpacity onPress={() => navigation.navigate('TeamDetail', { team: standing.team })}>
-                <Text>{`${standing.team} — ${standing.points} pts`}</Text>
+              <TouchableOpacity
+                testID={`standing-row-${standing.team}`}
+                onPress={() => navigation.navigate('TeamDetail', { team: standing.team })}
+                className={`flex-row items-center justify-between border-l-4 px-2 py-2 ${
+                  qualifying ? 'border-accent' : 'border-transparent'
+                }`}
+              >
+                <FlagLabel team={standing.team} />
+                <Text
+                  className={`text-neutral-900 dark:text-neutral-50 ${qualifying ? 'font-bold' : 'font-normal'}`}
+                >{`${standing.points} pts`}</Text>
               </TouchableOpacity>
             );
           }
           const match = item as BracketMatch;
-          return <Text testID={`knockout-match-${match.id}`}>{formatMatchLine(match)}</Text>;
+          return <MatchCard match={match} testID={`knockout-match-${match.id}`} />;
         }}
       />
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  groupHeader: { fontWeight: 'bold', padding: 8, backgroundColor: '#eee' },
-});
