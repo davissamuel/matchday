@@ -1,4 +1,5 @@
 import React from 'react';
+import { useColorScheme } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -18,7 +19,12 @@ const BracketStack = createNativeStackNavigator<BracketStackParamList>();
 
 function BracketStackNavigator() {
   return (
-    <BracketStack.Navigator screenOptions={{ headerTitleAlign: 'left', headerBackButtonDisplayMode: 'minimal' }}>
+    <BracketStack.Navigator
+      screenOptions={{
+        headerTitleAlign: 'left',
+        headerBackButtonDisplayMode: 'minimal',
+      }}
+    >
       <BracketStack.Screen name="Bracket" component={BracketScreen} />
       <BracketStack.Screen
         name="TeamDetail"
@@ -32,13 +38,17 @@ function BracketStackNavigator() {
 const Tab = createBottomTabNavigator();
 
 export default function RootNavigator() {
+  const scheme = useColorScheme();
+  const theme = scheme === 'dark' ? colors.dark : colors.light;
+
   return (
     <BracketDataProvider>
       <NavigationContainer>
         <Tab.Navigator
           screenOptions={{
-            tabBarActiveTintColor: colors.light.accent,
-            tabBarInactiveTintColor: colors.light.textMuted,
+            headerTitleAlign: 'left',
+            tabBarActiveTintColor: theme.accent,
+            tabBarInactiveTintColor: theme.textMuted,
           }}
         >
           <Tab.Screen
