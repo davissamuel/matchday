@@ -48,6 +48,14 @@ npm start
 
 Scan the QR code with your phone's camera (opens in Expo Go), or press `i` / `a` in the terminal to launch an iOS/Android simulator.
 
+**"Could not connect to the server" when scanning?** Your phone and computer aren't reachable over the same LAN (different Wi-Fi, a VPN, or a network with client isolation). Run with a tunnel instead, which routes through Expo's servers:
+
+```bash
+npx expo start --tunnel
+```
+
+(Installs `@expo/ngrok` on first use.) If `npm start` is already running, press `s` in the terminal to cycle connection modes instead of restarting.
+
 ## Testing
 
 ```bash
