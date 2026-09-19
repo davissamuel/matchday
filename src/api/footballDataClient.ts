@@ -32,6 +32,8 @@ export interface FootballDataStandingTableRow {
 }
 
 export interface FootballDataStandingsGroup {
+  stage: string;
+  type: 'TOTAL' | 'HOME' | 'AWAY';
   group: string | null;
   table: FootballDataStandingTableRow[];
 }
@@ -60,14 +62,18 @@ async function get<T>(path: string, config: FootballDataClientConfig): Promise<T
   return response.json();
 }
 
-export function fetchWorldCupMatches(
+export const PREMIER_LEAGUE_CODE = 'PL';
+
+export function fetchCompetitionMatches(
+  competitionCode: string,
   config: FootballDataClientConfig
 ): Promise<FootballDataMatchesResponse> {
-  return get<FootballDataMatchesResponse>('/competitions/WC/matches', config);
+  return get<FootballDataMatchesResponse>(`/competitions/${competitionCode}/matches`, config);
 }
 
-export function fetchWorldCupStandings(
+export function fetchCompetitionStandings(
+  competitionCode: string,
   config: FootballDataClientConfig
 ): Promise<FootballDataStandingsResponse> {
-  return get<FootballDataStandingsResponse>('/competitions/WC/standings', config);
+  return get<FootballDataStandingsResponse>(`/competitions/${competitionCode}/standings`, config);
 }

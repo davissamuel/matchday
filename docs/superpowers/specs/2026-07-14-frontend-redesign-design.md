@@ -1,5 +1,7 @@
 # Matchday — Frontend Redesign Design Spec
 
+> **Superseded** — this describes the visual redesign of the old Bracket/Team Detail/Simulation screens, which no longer exist. Matchday pivoted to a Premier League tracker; see `docs/superpowers/specs/2026-09-19-premier-league-tracker.md`. The component conventions here (NativeWind, light/dark theming, `ScreenContainer`/`StatPill`/`MatchCard`) still apply — the screens and data model don't. Kept as a historical record only.
+
 ## Overview
 
 Matchday's three screens (Bracket, Team Detail, Simulation) are currently functional but visually bare — plain `Text` lists, default colors, no type scale, no theming. This spec covers a full visual redesign of all three screens into a clean, editorial/stats-driven look (in the spirit of a premium sports-stats publication), with light and dark mode support, team flags throughout, and a bottom tab navigation shell. No backend, data, or domain logic changes — this is a presentation-layer pass on top of the existing app described in `docs/superpowers/specs/2026-07-12-matchday-design.md`.

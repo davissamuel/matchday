@@ -1,18 +1,17 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import { MatchCard } from '../MatchCard';
-import { BracketMatch } from '../../domain/bracket';
+import { LeagueMatch } from '../../domain/league';
 
-function buildMatch(overrides: Partial<BracketMatch>): BracketMatch {
+function buildMatch(overrides: Partial<LeagueMatch>): LeagueMatch {
   return {
     id: 1,
-    stage: 'LAST_16',
-    utcDate: '2026-07-01T18:00:00Z',
-    homeTeam: 'Argentina',
-    awayTeam: 'Brazil',
+    utcDate: '2026-09-27T14:00:00Z',
+    status: 'SCHEDULED',
+    homeTeam: 'Arsenal FC',
+    awayTeam: 'Chelsea FC',
     homeScore: null,
     awayScore: null,
-    status: 'SCHEDULED',
     ...overrides,
   };
 }
@@ -20,8 +19,8 @@ function buildMatch(overrides: Partial<BracketMatch>): BracketMatch {
 describe('MatchCard', () => {
   it('renders both team names', async () => {
     const { getByText } = await render(<MatchCard match={buildMatch({})} />);
-    expect(getByText('Argentina')).toBeTruthy();
-    expect(getByText('Brazil')).toBeTruthy();
+    expect(getByText('Arsenal FC')).toBeTruthy();
+    expect(getByText('Chelsea FC')).toBeTruthy();
   });
 
   it('renders the score when the match is decided', async () => {
@@ -35,7 +34,7 @@ describe('MatchCard', () => {
   });
 
   it('forwards a testID to the outer container', async () => {
-    const { getByTestId } = await render(<MatchCard match={buildMatch({})} testID="knockout-match-1" />);
-    expect(getByTestId('knockout-match-1')).toBeTruthy();
+    const { getByTestId } = await render(<MatchCard match={buildMatch({})} testID="fixture-1" />);
+    expect(getByTestId('fixture-1')).toBeTruthy();
   });
 });
