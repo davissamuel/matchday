@@ -4,34 +4,34 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { BracketDataProvider } from '../context/BracketDataContext';
-import BracketScreen from '../screens/BracketScreen';
+import { LeagueDataProvider } from '../context/LeagueDataContext';
+import StandingsScreen from '../screens/StandingsScreen';
 import TeamDetailScreen from '../screens/TeamDetailScreen';
-import SimulationScreen from '../screens/SimulationScreen';
+import FixturesScreen from '../screens/FixturesScreen';
 import { colors } from '../theme/colors';
 
-export type BracketStackParamList = {
-  Bracket: undefined;
+export type StandingsStackParamList = {
+  Standings: undefined;
   TeamDetail: { team: string };
 };
 
-const BracketStack = createNativeStackNavigator<BracketStackParamList>();
+const StandingsStack = createNativeStackNavigator<StandingsStackParamList>();
 
-function BracketStackNavigator() {
+function StandingsStackNavigator() {
   return (
-    <BracketStack.Navigator
+    <StandingsStack.Navigator
       screenOptions={{
         headerTitleAlign: 'left',
         headerBackButtonDisplayMode: 'minimal',
       }}
     >
-      <BracketStack.Screen name="Bracket" component={BracketScreen} />
-      <BracketStack.Screen
+      <StandingsStack.Screen name="Standings" component={StandingsScreen} />
+      <StandingsStack.Screen
         name="TeamDetail"
         component={TeamDetailScreen}
         options={({ route }) => ({ title: route.params.team })}
       />
-    </BracketStack.Navigator>
+    </StandingsStack.Navigator>
   );
 }
 
@@ -42,7 +42,7 @@ export default function RootNavigator() {
   const theme = scheme === 'dark' ? colors.dark : colors.light;
 
   return (
-    <BracketDataProvider>
+    <LeagueDataProvider>
       <NavigationContainer>
         <Tab.Navigator
           screenOptions={{
@@ -52,24 +52,24 @@ export default function RootNavigator() {
           }}
         >
           <Tab.Screen
-            name="BracketTab"
-            component={BracketStackNavigator}
+            name="StandingsTab"
+            component={StandingsStackNavigator}
             options={{
-              title: 'Bracket',
+              title: 'Standings',
               headerShown: false,
-              tabBarIcon: ({ color, size }) => <Ionicons name="git-network-outline" color={color} size={size} />,
+              tabBarIcon: ({ color, size }) => <Ionicons name="list-outline" color={color} size={size} />,
             }}
           />
           <Tab.Screen
-            name="SimulateTab"
-            component={SimulationScreen}
+            name="FixturesTab"
+            component={FixturesScreen}
             options={{
-              title: 'Simulate',
-              tabBarIcon: ({ color, size }) => <Ionicons name="flask-outline" color={color} size={size} />,
+              title: 'Fixtures',
+              tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline" color={color} size={size} />,
             }}
           />
         </Tab.Navigator>
       </NavigationContainer>
-    </BracketDataProvider>
+    </LeagueDataProvider>
   );
 }

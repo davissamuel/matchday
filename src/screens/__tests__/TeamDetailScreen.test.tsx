@@ -1,76 +1,74 @@
-jest.mock('../../context/BracketDataContext');
+jest.mock('../../context/LeagueDataContext');
 jest.mock('@react-navigation/native', () => ({
-  useRoute: () => ({ params: { team: 'Argentina' } }),
+  useRoute: () => ({ params: { team: 'Liverpool FC' } }),
 }));
 
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import TeamDetailScreen from '../TeamDetailScreen';
-import { useBracketDataContext } from '../../context/BracketDataContext';
+import { useLeagueDataContext } from '../../context/LeagueDataContext';
 
 describe('TeamDetailScreen', () => {
-  it('shows a loading message when ratings are not yet available', async () => {
-    (useBracketDataContext as jest.Mock).mockReturnValue({ bracket: null, ratings: null, error: null });
+  it('shows a loading message when standings are not yet available', async () => {
+    (useLeagueDataContext as jest.Mock).mockReturnValue({ standings: null, matches: null, error: null });
     const { getByText } = await render(<TeamDetailScreen />);
-    expect(getByText('Loading rating…')).toBeTruthy();
+    expect(getByText('Loading standings…')).toBeTruthy();
   });
 
-  it('shows the team name and rounded rating once loaded', async () => {
-    (useBracketDataContext as jest.Mock).mockReturnValue({
-      bracket: null,
-      ratings: new Map([['Argentina', { team: 'Argentina', rating: 1834.6, source: 'seed' }]]),
+  it('shows the team name and league position once loaded', async () => {
+    (useLeagueDataContext as jest.Mock).mockReturnValue({
+      standings: [
+        { position: 1, team: 'Liverpool FC', played: 5, won: 4, draw: 1, lost: 0, goalsFor: 11, goalsAgainst: 3, goalDifference: 8, points: 13 },
+      ],
+      matches: [],
       error: null,
     });
     const { getByText, getByTestId } = await render(<TeamDetailScreen />);
-    expect(getByText('Argentina')).toBeTruthy();
-    expect(getByTestId('team-rating')).toBeTruthy();
-    expect(getByText('1835')).toBeTruthy();
+    expect(getByText('Liverpool FC')).toBeTruthy();
+    expect(getByTestId('team-position')).toBeTruthy();
+    expect(getByText('#1')).toBeTruthy();
   });
 
   it('shows the error message when loading failed', async () => {
-    (useBracketDataContext as jest.Mock).mockReturnValue({ bracket: null, ratings: null, error: 'network down' });
+    (useLeagueDataContext as jest.Mock).mockReturnValue({ standings: null, matches: null, error: 'network down' });
     const { getByTestId } = await render(<TeamDetailScreen />);
     expect(getByTestId('team-detail-error').props.children).toBe('network down');
   });
 
-  it("lists the team's matches so far, formatted with scores or \"vs\" for undetermined opponents", async () => {
-    (useBracketDataContext as jest.Mock).mockReturnValue({
-      bracket: {
-        groups: [],
-        matches: [
-          {
-            id: 1,
-            stage: 'GROUP_STAGE',
-            utcDate: '2026-06-15T18:00:00Z',
-            homeTeam: 'Argentina',
-            awayTeam: 'Brazil',
-            homeScore: 2,
-            awayScore: 0,
-            status: 'FINISHED',
-          },
-          {
-            id: 2,
-            stage: 'LAST_16',
-            utcDate: '2026-07-01T18:00:00Z',
-            homeTeam: 'Argentina',
-            awayTeam: 'TBD',
-            homeScore: null,
-            awayScore: null,
-            status: 'SCHEDULED',
-          },
-          {
-            id: 3,
-            stage: 'GROUP_STAGE',
-            utcDate: '2026-06-10T18:00:00Z',
-            homeTeam: 'France',
-            awayTeam: 'Germany',
-            homeScore: 1,
-            awayScore: 1,
-            status: 'FINISHED',
-          },
-        ],
-      },
-      ratings: new Map([['Argentina', { team: 'Argentina', rating: 1800, source: 'seed' }]]),
+  it("lists only the team's own matches, with scores or \"vs\" for unplayed ones", async () => {
+    (useLeagueDataContext as jest.Mock).mockReturnValue({
+      standings: [
+        { position: 1, team: 'Liverpool FC', played: 5, won: 4, draw: 1, lost: 0, goalsFor: 11, goalsAgainst: 3, goalDifference: 8, points: 13 },
+      ],
+      matches: [
+        {
+          id: 1,
+          utcDate: '2026-09-13T14:00:00Z',
+          status: 'FINISHED',
+          homeTeam: 'Liverpool FC',
+          awayTeam: 'Arsenal FC',
+          homeScore: 2,
+          awayScore: 1,
+        },
+        {
+          id: 2,
+          utcDate: '2026-09-27T14:00:00Z',
+          status: 'SCHEDULED',
+          homeTeam: 'Aston Villa FC',
+          awayTeam: 'Liverpool FC',
+          homeScore: null,
+          awayScore: null,
+        },
+        {
+          id: 3,
+          utcDate: '2026-09-14T14:00:00Z',
+          status: 'FINISHED',
+          homeTeam: 'Chelsea FC',
+          awayTeam: 'Manchester City FC',
+          homeScore: 1,
+          awayScore: 1,
+        },
+      ],
       error: null,
     });
 
