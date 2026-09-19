@@ -1,5 +1,7 @@
 # Frontend Redesign Implementation Plan
 
+> **Superseded** — this redesigned the old Bracket/Team Detail/Simulation screens, which have since been replaced by the Premier League tracker (Standings/Fixtures/Team Detail). See `docs/superpowers/specs/2026-09-19-premier-league-tracker.md`. Kept as a historical record only.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Give Matchday's three screens (Bracket, Team Detail, Simulation) a full visual redesign — clean editorial/stats look, light+dark theming, crimson accent, team flags, and polished tab navigation — with no changes to data, domain, or navigation *logic*.

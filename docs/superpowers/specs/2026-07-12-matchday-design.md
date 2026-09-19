@@ -1,5 +1,7 @@
 # Matchday — Design Spec
 
+> **Superseded** — Matchday pivoted from a World Cup bracket app to a Premier League tracker. See `docs/superpowers/specs/2026-09-19-premier-league-tracker.md` for the current direction. This doc is kept as a historical record only.
+
 ## Overview
 
 Matchday is a personal iPhone app for following the 2026 FIFA World Cup: viewing the up-to-date bracket (groups + knockout rounds), drilling into teams, and running "what if" match simulations with win probabilities derived from team strength ratings.

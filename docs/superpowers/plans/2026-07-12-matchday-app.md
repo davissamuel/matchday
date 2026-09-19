@@ -1,5 +1,7 @@
 # Matchday App Implementation Plan
 
+> **Superseded** — this plan built the original World Cup bracket app, which has since been removed. See `docs/superpowers/specs/2026-09-19-premier-league-tracker.md` for the current direction. Kept as a historical record only.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a React Native (Expo) iPhone app that shows the live 2026 FIFA World Cup bracket, lets the user drill into a team, and lets them simulate any single matchup with a win/draw/loss probability derived from Elo-style team strength ratings.
